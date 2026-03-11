@@ -25,6 +25,7 @@ interface FoodRequest {
   status: string;
   assigned_volunteer_id: string | null;
   created_at: string;
+  updated_at?: string;
 }
 
 export default function ReceiverDashboard() {
