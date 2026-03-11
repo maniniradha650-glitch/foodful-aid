@@ -25,7 +25,7 @@ export default function Navbar() {
             <span className="font-heading text-lg font-bold text-primary-foreground">अ</span>
           </div>
           <span className="font-heading text-xl font-bold text-foreground">
-            Annadanam <span className="text-gradient-primary">Seva</span>
+            Annadanam <span className="text-gradient-primary"></span>
           </span>
         </Link>
 
