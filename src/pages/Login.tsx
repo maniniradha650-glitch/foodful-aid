@@ -38,7 +38,7 @@ export default function Login() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
               <span className="font-heading text-xl font-bold text-primary-foreground">अ</span>
             </div>
-            <span className="font-heading text-2xl font-bold text-foreground">Annadanam Seva</span>
+            <span className="font-heading text-2xl font-bold text-foreground">Annadanam</span>
           </Link>
         </div>
 
