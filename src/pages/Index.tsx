@@ -45,7 +45,7 @@ export default function Index() {
             <span className="font-body text-sm font-medium text-primary">Serving communities with dignity</span>
           </div>
           <h1 className="mb-5 font-heading text-4xl font-bold leading-tight text-foreground md:text-6xl">
-            Annadanam <span className="text-gradient-primary">Seva</span> Platform
+            Annadanam <span className="text-gradient-primary"></span> Platform
           </h1>
           <p className="mb-10 max-w-2xl font-body text-lg leading-relaxed text-muted-foreground md:text-xl">
             A dignified platform connecting food donors, volunteers, and receivers — ensuring no one goes hungry. Track every meal from kitchen to table.
@@ -112,7 +112,7 @@ export default function Index() {
       <footer className="border-t border-border bg-card py-8">
         <div className="container mx-auto px-4 text-center">
           <p className="font-body text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Annadanam Seva. Built with ❤️ for community food service.
+            © {new Date().getFullYear()} Annadanam. Built with ❤️ for community food service.
           </p>
         </div>
       </footer>
