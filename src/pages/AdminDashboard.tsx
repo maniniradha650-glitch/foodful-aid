@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DeliveryStatusBadge from "@/components/DeliveryStatusBadge";
 import { toast } from "sonner";
+import { ClipboardList, Clock, Truck, IndianRupee, CheckCircle2, UserCheck } from "lucide-react";
 
 interface FoodRequest {
   id: string;
@@ -70,98 +71,105 @@ export default function AdminDashboard() {
   const assignVolunteer = async (requestId: string) => {
     const volunteerId = selectedVolunteers[requestId];
     if (!volunteerId) { toast.error("Select a volunteer first"); return; }
-
     await supabase.from("food_requests").update({ assigned_volunteer_id: volunteerId, status: "volunteer_assigned" }).eq("id", requestId);
     await supabase.from("delivery_tasks").insert({ volunteer_id: volunteerId, request_id: requestId, status: "assigned" });
-    
-    // Notify volunteer
     await supabase.from("notifications").insert({ user_id: volunteerId, message: "You have a new delivery task.", type: "assignment" });
-    
-    // Notify receiver
     const req = requests.find(r => r.id === requestId);
     if (req) {
       const volName = volunteers.find(v => v.user_id === volunteerId)?.name || "A volunteer";
-      // Find receiver user_id from food_requests
       const { data: frData } = await supabase.from("food_requests").select("receiver_id").eq("id", requestId).single();
       if (frData) {
         await supabase.from("notifications").insert({ user_id: frData.receiver_id, message: `Your food will be delivered by ${volName}.`, type: "update" });
       }
     }
-
     toast.success("Volunteer assigned");
     fetchData();
   };
 
+  const statCards = [
+    { label: "Total Requests", value: stats.total, icon: ClipboardList, color: "text-foreground" },
+    { label: "Pending", value: stats.pending, icon: Clock, color: "text-primary" },
+    { label: "Delivered", value: stats.delivered, icon: Truck, color: "text-success" },
+    { label: "Donations", value: `₹${stats.donations}`, icon: IndianRupee, color: "text-accent" },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container mx-auto p-4">
-        <h1 className="mb-6 font-heading text-2xl font-bold text-foreground">Admin Dashboard</h1>
+      <div className="container mx-auto p-4 md:p-6">
+        <div className="mb-8">
+          <h1 className="font-heading text-3xl font-bold text-foreground">Admin Dashboard</h1>
+          <p className="font-body text-muted-foreground mt-1">Manage food requests, assign volunteers, and track progress.</p>
+        </div>
 
+        {/* Profile Card */}
         {profile && (
-          <Card className="mb-6">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-2 gap-2 font-body text-sm">
-                <div><span className="text-muted-foreground">Name:</span> {profile.name}</div>
-                <div><span className="text-muted-foreground">Email:</span> {profile.email}</div>
-                <div><span className="text-muted-foreground">Role:</span> <span className="capitalize">{role}</span></div>
+          <Card className="mb-6 border-border shadow-card">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary font-heading text-lg font-bold">
+                  {profile.name?.charAt(0)?.toUpperCase() || "A"}
+                </div>
+                <div>
+                  <p className="font-heading text-base font-semibold text-foreground">{profile.name}</p>
+                  <p className="font-body text-sm text-muted-foreground">{profile.email}</p>
+                </div>
+                <span className="ml-auto rounded-full bg-primary/10 px-3 py-1 font-body text-xs font-semibold text-primary capitalize">{role}</span>
               </div>
             </CardContent>
           </Card>
         )}
 
         {/* Stats */}
-        <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="font-heading text-2xl font-bold text-foreground">{stats.total}</p>
-              <p className="font-body text-sm text-muted-foreground">Total Requests</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="font-heading text-2xl font-bold text-primary">{stats.pending}</p>
-              <p className="font-body text-sm text-muted-foreground">Pending</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="font-heading text-2xl font-bold text-foreground">{stats.delivered}</p>
-              <p className="font-body text-sm text-muted-foreground">Delivered</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="font-heading text-2xl font-bold text-foreground">₹{stats.donations}</p>
-              <p className="font-body text-sm text-muted-foreground">Donations</p>
-            </CardContent>
-          </Card>
+        <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {statCards.map((s) => (
+            <Card key={s.label} className="stat-accent border-border shadow-stat">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-2">
+                  <s.icon className={`h-5 w-5 ${s.color}`} />
+                </div>
+                <p className={`font-heading text-2xl font-bold ${s.color}`}>{s.value}</p>
+                <p className="font-body text-xs text-muted-foreground mt-1">{s.label}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Requests */}
-        <h2 className="mb-4 font-heading text-xl font-semibold">Food Requests</h2>
+        <div className="mb-4 flex items-center gap-2">
+          <ClipboardList className="h-5 w-5 text-primary" />
+          <h2 className="font-heading text-xl font-semibold text-foreground">Food Requests</h2>
+        </div>
         {requests.length === 0 ? (
-          <p className="font-body text-muted-foreground">You have no pending requests.</p>
+          <Card className="border-border shadow-card">
+            <CardContent className="p-8 text-center">
+              <ClipboardList className="mx-auto h-10 w-10 text-muted-foreground/40 mb-3" />
+              <p className="font-body text-muted-foreground">No food requests yet.</p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-4">
             {requests.map(req => (
-              <Card key={req.id}>
-                <CardContent className="p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3 className="font-heading text-lg font-semibold">{req.receiver_name}</h3>
+              <Card key={req.id} className="border-border shadow-card card-hover">
+                <CardContent className="p-5">
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-heading text-lg font-semibold text-foreground">{req.receiver_name}</h3>
+                      <p className="font-body text-sm text-muted-foreground">{req.location}</p>
+                    </div>
                     <DeliveryStatusBadge status={req.status} />
                   </div>
-                  <div className="mb-3 grid grid-cols-2 gap-1 font-body text-sm text-muted-foreground">
-                    <p>Location: {req.location}</p>
-                    <p>People: {req.people_count}</p>
-                    <p>Phone: {req.phone}</p>
-                    <p>Date: {req.required_date}</p>
-                    {req.notes && <p className="col-span-2">Notes: {req.notes}</p>}
+                  <div className="mb-4 grid grid-cols-2 gap-x-6 gap-y-1 rounded-lg bg-secondary/50 p-3 font-body text-sm">
+                    <p><span className="text-muted-foreground">People:</span> <span className="font-medium text-foreground">{req.people_count}</span></p>
+                    <p><span className="text-muted-foreground">Phone:</span> <span className="font-medium text-foreground">{req.phone}</span></p>
+                    <p><span className="text-muted-foreground">Date:</span> <span className="font-medium text-foreground">{req.required_date}</span></p>
+                    {req.notes && <p className="col-span-2"><span className="text-muted-foreground">Notes:</span> <span className="font-medium text-foreground">{req.notes}</span></p>}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {req.status === "pending" && (
-                      <Button onClick={() => approveRequest(req.id)}>
-                        Approve Request
+                      <Button onClick={() => approveRequest(req.id)} className="gap-1.5">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Approve
                       </Button>
                     )}
                     {(req.status === "approved" || req.status === "pending") && !req.assigned_volunteer_id && (
@@ -176,8 +184,9 @@ export default function AdminDashboard() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <Button onClick={() => assignVolunteer(req.id)}>
-                          Assign Volunteer
+                        <Button onClick={() => assignVolunteer(req.id)} className="gap-1.5">
+                          <UserCheck className="h-4 w-4" />
+                          Assign
                         </Button>
                       </>
                     )}
