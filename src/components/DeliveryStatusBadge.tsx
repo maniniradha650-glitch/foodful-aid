@@ -1,29 +1,24 @@
-const statusColors: Record<string, string> = {
-  pending: "bg-muted text-muted-foreground",
-  approved: "bg-secondary text-secondary-foreground",
-  volunteer_assigned: "bg-accent/20 text-accent",
-  food_picked: "bg-primary/20 text-foreground",
-  on_the_way: "bg-accent text-accent-foreground",
-  delivered: "bg-primary text-primary-foreground",
-  assigned: "bg-accent/20 text-accent",
-  accepted: "bg-primary/20 text-foreground",
-};
+import { CheckCircle2, Clock, Truck, Package, MapPin, UserCheck, ThumbsUp } from "lucide-react";
 
-const statusLabels: Record<string, string> = {
-  pending: "Pending",
-  approved: "Approved",
-  volunteer_assigned: "Volunteer Assigned",
-  food_picked: "Food Picked",
-  on_the_way: "On The Way",
-  delivered: "Delivered",
-  assigned: "Assigned",
-  accepted: "Accepted",
+const statusConfig: Record<string, { bg: string; text: string; icon: any; label: string }> = {
+  pending: { bg: "bg-muted", text: "text-muted-foreground", icon: Clock, label: "Pending" },
+  approved: { bg: "bg-accent/10", text: "text-accent", icon: ThumbsUp, label: "Approved" },
+  volunteer_assigned: { bg: "bg-primary/10", text: "text-primary", icon: UserCheck, label: "Volunteer Assigned" },
+  food_picked: { bg: "bg-warning/10", text: "text-warning", icon: Package, label: "Food Picked" },
+  on_the_way: { bg: "bg-accent/15", text: "text-accent", icon: Truck, label: "On The Way" },
+  delivered: { bg: "bg-success/10", text: "text-success", icon: CheckCircle2, label: "Delivered" },
+  assigned: { bg: "bg-primary/10", text: "text-primary", icon: UserCheck, label: "Assigned" },
+  accepted: { bg: "bg-accent/10", text: "text-accent", icon: ThumbsUp, label: "Accepted" },
 };
 
 export default function DeliveryStatusBadge({ status }: { status: string }) {
+  const config = statusConfig[status] || { bg: "bg-muted", text: "text-muted-foreground", icon: Clock, label: status };
+  const Icon = config.icon;
+
   return (
-    <span className={`inline-block rounded-full px-3 py-1 font-body text-xs font-medium ${statusColors[status] || "bg-muted text-muted-foreground"}`}>
-      {statusLabels[status] || status}
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-body text-xs font-semibold ${config.bg} ${config.text}`}>
+      <Icon className="h-3 w-3" />
+      {config.label}
     </span>
   );
 }

@@ -11,6 +11,7 @@ import DeliveryStatusBadge from "@/components/DeliveryStatusBadge";
 import DeliveryMap from "@/components/DeliveryMap";
 import FulfilledReceipt from "@/components/FulfilledReceipt";
 import { toast } from "sonner";
+import { Heart, Plus, X, IndianRupee, MapPin, TrendingUp } from "lucide-react";
 
 interface Donation {
   id: string;
@@ -31,32 +32,22 @@ interface FoodRequest {
   status: string;
 }
 
-interface DeliveryTask {
-  id: string;
-  status: string;
-  volunteer_id: string;
-  request_id: string;
-}
-
 export default function DonorDashboard() {
   const { user, profile, role } = useAuth();
   const [donations, setDonations] = useState<Donation[]>([]);
   const [requests, setRequests] = useState<FoodRequest[]>([]);
-  const [tasks, setTasks] = useState<DeliveryTask[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ amount: "", request_id: "" });
   const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     if (!user) return;
-    const [donRes, reqRes, taskRes] = await Promise.all([
+    const [donRes, reqRes] = await Promise.all([
       supabase.from("donations").select("*").eq("donor_id", user.id).order("created_at", { ascending: false }),
       supabase.from("food_requests").select("*").order("created_at", { ascending: false }),
-      supabase.from("delivery_tasks").select("*"),
     ]);
     if (donRes.data) setDonations(donRes.data as Donation[]);
     if (reqRes.data) setRequests(reqRes.data as FoodRequest[]);
-    if (taskRes.data) setTasks(taskRes.data as DeliveryTask[]);
   };
 
   useEffect(() => { fetchData(); }, [user]);
@@ -73,7 +64,7 @@ export default function DonorDashboard() {
         request_id: form.request_id || null,
       });
       if (error) throw error;
-      toast.success("Donation recorded");
+      toast.success("Donation recorded! Thank you 🙏");
       setShowForm(false);
       setForm({ amount: "", request_id: "" });
       fetchData();
@@ -84,42 +75,74 @@ export default function DonorDashboard() {
     }
   };
 
+  const totalDonated = donations.reduce((sum, d) => sum + d.amount, 0);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container mx-auto p-4">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="font-heading text-2xl font-bold text-foreground">Donor Dashboard</h1>
-          <Button onClick={() => setShowForm(!showForm)}>
-            {showForm ? "Cancel" : "Donate"}
+      <div className="container mx-auto p-4 md:p-6">
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="font-heading text-3xl font-bold text-foreground">Donor Dashboard</h1>
+            <p className="font-body text-muted-foreground mt-1">Track your donations and delivery progress.</p>
+          </div>
+          <Button onClick={() => setShowForm(!showForm)} className="gap-1.5">
+            {showForm ? <><X className="h-4 w-4" /> Cancel</> : <><Plus className="h-4 w-4" /> Donate</>}
           </Button>
         </div>
 
-        {profile && (
-          <Card className="mb-6">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-2 gap-2 font-body text-sm">
-                <div><span className="text-muted-foreground">Name:</span> {profile.name}</div>
-                <div><span className="text-muted-foreground">Email:</span> {profile.email}</div>
-                <div><span className="text-muted-foreground">Role:</span> <span className="capitalize">{role}</span></div>
+        {/* Profile + Stats */}
+        <div className="mb-6 grid gap-4 sm:grid-cols-2">
+          {profile && (
+            <Card className="border-border shadow-card">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary font-heading text-lg font-bold">
+                    {profile.name?.charAt(0)?.toUpperCase() || "D"}
+                  </div>
+                  <div>
+                    <p className="font-heading text-base font-semibold text-foreground">{profile.name}</p>
+                    <p className="font-body text-sm text-muted-foreground">{profile.email}</p>
+                  </div>
+                  <span className="ml-auto rounded-full bg-primary/10 px-3 py-1 font-body text-xs font-semibold text-primary capitalize">{role}</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          <Card className="stat-accent border-border shadow-stat">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                  <TrendingUp className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-heading text-2xl font-bold text-primary">₹{totalDonated.toLocaleString()}</p>
+                  <p className="font-body text-xs text-muted-foreground">Total Donated · {donations.length} contributions</p>
+                </div>
               </div>
             </CardContent>
           </Card>
-        )}
+        </div>
 
+        {/* Donation Form */}
         {showForm && (
-          <Card className="mb-6">
-            <CardHeader><CardTitle className="font-heading text-xl">Make a Donation</CardTitle></CardHeader>
-            <CardContent>
+          <Card className="mb-6 border-border shadow-card-hover animate-fade-in">
+            <CardHeader className="pb-2">
+              <CardTitle className="font-heading text-xl flex items-center gap-2">
+                <Heart className="h-5 w-5 text-primary" />
+                Make a Donation
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
               <form onSubmit={handleDonate} className="space-y-4">
-                <div>
-                  <Label className="font-body">Amount (₹)</Label>
-                  <Input type="number" min="1" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} required />
+                <div className="space-y-1.5">
+                  <Label className="font-body text-sm font-medium">Amount (₹)</Label>
+                  <Input type="number" min="1" placeholder="Enter amount" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} required />
                 </div>
-                <div>
-                  <Label className="font-body">Link to Food Request (optional)</Label>
+                <div className="space-y-1.5">
+                  <Label className="font-body text-sm font-medium">Link to Food Request (optional)</Label>
                   <Select value={form.request_id} onValueChange={v => setForm({ ...form, request_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select request" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Select a request to sponsor" /></SelectTrigger>
                     <SelectContent>
                       {requests.map(r => (
                         <SelectItem key={r.id} value={r.id}>{r.receiver_name} — {r.location}</SelectItem>
@@ -127,8 +150,9 @@ export default function DonorDashboard() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? "Processing..." : "Donate"}
+                <Button type="submit" disabled={submitting} className="gap-1.5">
+                  <Heart className="h-4 w-4" />
+                  {submitting ? "Processing..." : "Donate Now"}
                 </Button>
               </form>
             </CardContent>
@@ -136,24 +160,35 @@ export default function DonorDashboard() {
         )}
 
         {/* Donation history */}
-        <h2 className="mb-4 font-heading text-xl font-semibold">Donation History</h2>
+        <div className="mb-4 flex items-center gap-2">
+          <IndianRupee className="h-5 w-5 text-primary" />
+          <h2 className="font-heading text-xl font-semibold text-foreground">Donation History</h2>
+        </div>
         {donations.length === 0 ? (
-          <p className="font-body text-muted-foreground">You have no donations yet.</p>
+          <Card className="border-border shadow-card">
+            <CardContent className="p-8 text-center">
+              <Heart className="mx-auto h-10 w-10 text-muted-foreground/40 mb-3" />
+              <p className="font-body text-muted-foreground">No donations yet. Be the first to make a difference!</p>
+            </CardContent>
+          </Card>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 mb-8">
             {donations.map(d => (
-              <Card key={d.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
+              <Card key={d.id} className="border-border shadow-card card-hover">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                      <IndianRupee className="h-5 w-5 text-primary" />
+                    </div>
                     <div className="font-body text-sm">
-                      <p className="font-semibold text-foreground">₹{d.amount}</p>
+                      <p className="font-semibold text-foreground">₹{d.amount.toLocaleString()}</p>
                       <p className="text-muted-foreground">{new Date(d.created_at).toLocaleDateString()}</p>
                     </div>
-                    {d.request_id && (() => {
-                      const req = requests.find(r => r.id === d.request_id);
-                      return req ? <DeliveryStatusBadge status={req.status} /> : null;
-                    })()}
                   </div>
+                  {d.request_id && (() => {
+                    const req = requests.find(r => r.id === d.request_id);
+                    return req ? <DeliveryStatusBadge status={req.status} /> : null;
+                  })()}
                 </CardContent>
               </Card>
             ))}
@@ -161,19 +196,27 @@ export default function DonorDashboard() {
         )}
 
         {/* Delivery tracking */}
-        <h2 className="mb-4 mt-8 font-heading text-xl font-semibold">Delivery Progress</h2>
+        <div className="mb-4 flex items-center gap-2">
+          <MapPin className="h-5 w-5 text-accent" />
+          <h2 className="font-heading text-xl font-semibold text-foreground">Delivery Progress</h2>
+        </div>
         {requests.filter(r => r.status !== "pending").length === 0 ? (
-          <p className="font-body text-muted-foreground">No active deliveries.</p>
+          <Card className="border-border shadow-card">
+            <CardContent className="p-8 text-center">
+              <MapPin className="mx-auto h-10 w-10 text-muted-foreground/40 mb-3" />
+              <p className="font-body text-muted-foreground">No active deliveries to track.</p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-4">
             {requests.filter(r => r.status !== "pending").map(req => (
               req.status === "delivered" ? (
                 <FulfilledReceipt key={req.id} peopleCount={req.people_count} deliveryDate={req.required_date} />
               ) : (
-                <Card key={req.id}>
-                  <CardContent className="p-4">
-                    <div className="mb-2 flex items-center justify-between">
-                      <h3 className="font-heading font-semibold">{req.receiver_name} — {req.location}</h3>
+                <Card key={req.id} className="border-border shadow-card card-hover">
+                  <CardContent className="p-5">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="font-heading font-semibold text-foreground">{req.receiver_name} — {req.location}</h3>
                       <DeliveryStatusBadge status={req.status} />
                     </div>
                     {req.latitude && req.longitude && (

@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Bell, CheckCheck } from "lucide-react";
 
 interface Notification {
   id: string;
@@ -29,7 +30,6 @@ export default function NotificationsPage() {
     };
     fetchNotifications();
 
-    // Realtime subscription
     const channel = supabase
       .channel("notifications-realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
@@ -47,27 +47,55 @@ export default function NotificationsPage() {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
   };
 
+  const typeIcons: Record<string, string> = {
+    assignment: "🚴",
+    update: "📦",
+    info: "ℹ️",
+    request: "🍽️",
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container mx-auto max-w-2xl p-4">
-        <h1 className="mb-6 font-heading text-2xl font-bold text-foreground">Notifications</h1>
+      <div className="container mx-auto max-w-2xl p-4 md:p-6">
+        <div className="mb-8">
+          <h1 className="font-heading text-3xl font-bold text-foreground flex items-center gap-2">
+            <Bell className="h-7 w-7 text-primary" />
+            Notifications
+          </h1>
+          <p className="font-body text-muted-foreground mt-1">
+            {notifications.filter(n => !n.is_read).length} unread notifications
+          </p>
+        </div>
+
         {notifications.length === 0 ? (
-          <p className="text-center font-body text-muted-foreground">You have no notifications.</p>
+          <Card className="border-border shadow-card">
+            <CardContent className="p-8 text-center">
+              <Bell className="mx-auto h-10 w-10 text-muted-foreground/40 mb-3" />
+              <p className="font-body text-muted-foreground">No notifications yet. You'll see updates here.</p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-3">
             {notifications.map(n => (
-              <Card key={n.id} className={n.is_read ? "opacity-60" : "border-l-4 border-l-accent"}>
-                <CardContent className="flex items-center justify-between p-4">
-                  <div>
+              <Card
+                key={n.id}
+                className={`border-border shadow-card transition-all duration-200 ${
+                  n.is_read ? "opacity-60" : "border-l-4 border-l-primary"
+                }`}
+              >
+                <CardContent className="flex items-start gap-3 p-4">
+                  <span className="mt-0.5 text-lg">{typeIcons[n.type] || "📌"}</span>
+                  <div className="flex-1 min-w-0">
                     <p className="font-body text-sm text-foreground">{n.message}</p>
-                    <p className="font-body text-xs text-muted-foreground">
+                    <p className="font-body text-xs text-muted-foreground mt-1">
                       {new Date(n.created_at).toLocaleString()}
                     </p>
                   </div>
                   {!n.is_read && (
-                    <Button variant="ghost" size="sm" onClick={() => markAsRead(n.id)}>
-                      Mark Read
+                    <Button variant="ghost" size="sm" onClick={() => markAsRead(n.id)} className="shrink-0 gap-1 text-xs">
+                      <CheckCheck className="h-3.5 w-3.5" />
+                      Read
                     </Button>
                   )}
                 </CardContent>
